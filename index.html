@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Comix Web Reader</title>
+<link rel="shortcut icon" type="image/x-icon" href="https://feliciahard.github.io/comix-src/images/A.ico">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://unpkg.com/dropzone/dist/dropzone.css" rel="stylesheet" />
+<script src="https://unpkg.com/dropzone/dist/dropzone-min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+<!-- LIGHTGALLERY CORE -->
+<link href="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/css/lightgallery.min.css" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  display: flex;
+  background: #0b0c0e;
+  color: #e5e7eb;
+  font-family: ui-sans-serif, system-ui;
+}
+
+aside {
+  width: 270px;
+  height: 100vh;
+  position: fixed;
+  left: 0;
+  top: 0;
+  background: #121418;
+  padding: 18px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,0.06);
+}
+
+aside h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #fff;
+}
+
+/* Sidebar scroll hidden but still scrollable */
+#sidebar {
+  overflow-y: auto;          /* allows scrolling */
+  max-height: 100vh;
+  scrollbar-width: none;     /* Firefox */
+}
+
+#sidebar::-webkit-scrollbar {
+  display: none;             /* Chrome, Safari, Edge */
+}
+
+.demo-btn {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 14px;
+}
+
+.demo-btn:hover {
+  background: rgba(99,102,241,0.25);
+  transform: translateX(3px);
+}
+
+main {
+  margin-left: 270px;
+  width: calc(100% - 270px);
+  padding: 30px;
+}
+
+.dropzone {
+  background: #151820;
+  border: 2px dashed rgba(255,255,255,0.12);
+  border-radius: 14px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+#output {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+/* gallery item wrapper */
+#output a {
+  display: block;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+#output img {
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  background: #0f1115;
+  border-radius: 10px;
+  transition: transform 0.2s ease;
+}
+
+#output img:hover {
+  transform: scale(1.04);
+}
+
+#loader {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.75);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  z-index: 50;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 5px solid rgba(255,255,255,.15);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+
+<body>
+
+<aside id="sidebar"></aside>
+
+<main>
+  <p class="mb-4 text-2xl font-semibold">Comix Reader</p>
+
+  <form id="dropzone" class="dropzone"></form>
+
+  <div id="output"></div>
+</main>
+
+<div id="loader">
+  <div class="spinner"></div>
+  <div id="loaderText" style="margin-top:12px;">Loading...</div>
+</div>
+
+<!-- JS -->
+<script src="./assets/js/comix-lib.js"></script>
+<script src="./assets/js/sidebar.js"></script>
+<script src="./assets/js/uncompress/uncompress.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/lightgallery.js@1.4.0/dist/js/lightgallery.min.js"></script>
+
+<!-- PLUGINS (YOUR REQUESTED ONES) -->
+<script src="https://cdn.jsdelivr.net/npm/lg-fullscreen.js@1.2.0/dist/lg-fullscreen.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lg-zoom.js@1.3.0/dist/lg-zoom.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lg-thumbnail.js@1.2.0/dist/lg-thumbnail.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lg-autoplay.js@1.2.0/dist/lg-autoplay.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lg-rotate.js@1.2.0/dist/lg-rotate.min.js"></script>
+
+<script>
+	window.galleryInstance = null; // global gallery
+	window.currentUrls = [];       // to track blobs
+
+	window.showLoader = (text) => {
+	  const loader = document.getElementById("loader");
+	  const loaderText = document.getElementById("loaderText");
+	  loaderText.textContent = text;
+	  loader.style.display = "flex";
+	};
+
+	window.hideLoader = () => {
+	  document.getElementById("loader").style.display = "none";
+	};
+
+	window.openComic = async (file) => {
+	  window.showLoader("Reading CBZ...");
+
+	  // Destroy previous gallery
+	  if (window.galleryInstance) {
+		window.galleryInstance.destroy(true);
+		window.galleryInstance = null;
+	  }
+
+	  // Revoke old blob URLs
+	  window.currentUrls.forEach(url => URL.revokeObjectURL(url));
+	  window.currentUrls = [];
+
+	  // Remove old output and create a new one
+	  const oldOutput = document.getElementById("output");
+	  oldOutput.remove();
+
+	  const newOutput = document.createElement("div");
+	  newOutput.id = "output";
+	  newOutput.style.display = "grid";
+	  newOutput.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, 1fr))";
+	  newOutput.style.gap = "14px";
+	  newOutput.style.marginTop = "24px";
+	  document.querySelector("main").appendChild(newOutput);
+
+	  // Load CBZ
+	  const zip = await JSZip.loadAsync(file);
+	  const images = [];
+
+	  zip.forEach((path, entry) => {
+		if (/\.(jpg|jpeg|png|webp)$/i.test(path)) images.push(entry);
+	  });
+
+	  images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+
+	  const fragment = document.createDocumentFragment();
+
+	  for (let i = 0; i < images.length; i++) {
+		const blob = await images[i].async("blob");
+		const url = URL.createObjectURL(blob);
+		window.currentUrls.push(url);
+
+		const wrapper = document.createElement("div");
+		const a = document.createElement("a");
+		a.href = url;
+
+		const img = document.createElement("img");
+		img.src = url;
+		img.alt = images[i].name;
+		a.appendChild(img);
+
+		const name = document.createElement("div");
+		name.textContent = images[i].name;
+		name.style.fontSize = "12px";
+		name.style.opacity = "0.7";
+		name.style.wordBreak = "break-word";
+		name.style.padding = "6px 4px 0";
+
+		wrapper.appendChild(a);
+		// wrapper.appendChild(name);
+		fragment.appendChild(wrapper);
+
+		document.getElementById("loaderText").textContent = `Loading ${i + 1}/${images.length}`;
+	  }
+
+	  newOutput.appendChild(fragment);
+
+	  // Initialize new gallery
+	  requestAnimationFrame(() => {
+		window.galleryInstance = lightGallery(newOutput, {
+		  selector: 'a',
+		  thumbnail: true,
+		  zoom: true,
+		  fullScreen: true,
+		  rotate: true,
+		  autoplay: false
+		});
+		window.hideLoader();
+	  });
+	};
+
+	// Update demo buttons to use global openComic
+	document.querySelectorAll(".demo-btn").forEach(btn => {
+	  btn.onclick = async () => {
+		window.showLoader("Downloading CBZ...");
+		const res = await fetch(btn.dataset.url);
+		const blob = await res.blob();
+		const file = new File([blob], "demo.cbz");
+		window.openComic(file);
+	  };
+	});
+
+	// DROPZONE
+	if (window.Dropzone) {
+	  Dropzone.autoDiscover = false;
+	  new Dropzone("#dropzone", {
+		url: "#",
+		autoProcessQueue: false,
+		maxFiles: 1,
+		init: function () {
+		  this.on("addedfile", file => window.openComic(file));
+		}
+	  });
+	}
+</script>
+
+</body>
+</html>
