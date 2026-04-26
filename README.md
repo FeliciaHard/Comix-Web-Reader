@@ -2,6 +2,8 @@
 
 Modern web-based comic book reader for CBR, CBZ, and CBT files with library management and reading progress tracking.
 
+DEMO Link: https://feliciahard.github.io/Comix-Web-Reader/
+
 ## Features
 
 - **Modern UI** 
