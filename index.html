@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Comix Web Reader</title>
 <link rel="shortcut icon" type="image/x-icon" href="https://feliciahard.github.io/comix-src/images/A.ico">
-
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://unpkg.com/dropzone/dist/dropzone.css" rel="stylesheet" />
 <script src="https://unpkg.com/dropzone/dist/dropzone-min.js"></script>
@@ -71,8 +70,6 @@ aside h2 {
 }
 
 main {
-  margin-left: 270px;
-  width: calc(100% - 270px);
   padding: 30px;
 }
 
@@ -139,9 +136,14 @@ main {
 
 <body>
 
-<aside id="sidebar"></aside>
+<button id="toggleSidebar" class="fixed top-3 left-3 z-[60] rounded-lg bg-gray-800 px-3 py-2 text-white shadow-md hover:bg-gray-700 transition">
+  ☰
+</button>
 
-<main>
+<aside id="sidebar" class="transition-all duration-300"><div id="box1"></div></aside>
+
+
+<main id="mainContent" class="ml-[270px] w-[calc(100%-270px)] transition-all duration-300">
   <p class="mb-4 text-2xl font-semibold">Comix Web Reader</p>
 
   <form id="dropzone" class="dropzone"></form>
@@ -155,7 +157,7 @@ main {
 </div>
 
 <!-- JS -->
-<script src="./assets/js/comix-lib.js"></script>
+<script src="./assets/js/comic-lib.js"></script>
 <script src="./assets/js/sidebar.js"></script>
 <script src="./assets/js/uncompress/uncompress.js"></script>
 
@@ -169,124 +171,166 @@ main {
 <script src="https://cdn.jsdelivr.net/npm/lg-rotate.js@1.2.0/dist/lg-rotate.min.js"></script>
 
 <script>
-	window.galleryInstance = null; // global gallery
-	window.currentUrls = [];       // to track blobs
+window.galleryInstance = null;
+window.currentUrls = [];
 
-	window.showLoader = (text) => {
-	  const loader = document.getElementById("loader");
-	  const loaderText = document.getElementById("loaderText");
-	  loaderText.textContent = text;
-	  loader.style.display = "flex";
-	};
+// Loader controls
+window.showLoader = (text) => {
+  const loader = document.getElementById("loader");
+  const loaderText = document.getElementById("loaderText");
+  loaderText.textContent = text;
+  loader.style.display = "flex";
+};
 
-	window.hideLoader = () => {
-	  document.getElementById("loader").style.display = "none";
-	};
+window.hideLoader = () => {
+  document.getElementById("loader").style.display = "none";
+};
 
-	window.openComic = async (file) => {
-	  window.showLoader("Reading CBZ...");
+// Keyboard navigation
+document.addEventListener("keydown", (e) => {
+  if (!window.galleryInstance) return;
 
-	  // Destroy previous gallery
-	  if (window.galleryInstance) {
-		window.galleryInstance.destroy(true);
-		window.galleryInstance = null;
-	  }
+  if (e.key === "ArrowRight") {
+    window.galleryInstance.goToNextSlide();
+  }
 
-	  // Revoke old blob URLs
-	  window.currentUrls.forEach(url => URL.revokeObjectURL(url));
-	  window.currentUrls = [];
+  if (e.key === "ArrowLeft") {
+    window.galleryInstance.goToPrevSlide();
+  }
+});
 
-	  // Remove old output and create a new one
-	  const oldOutput = document.getElementById("output");
-	  oldOutput.remove();
+// MAIN FUNCTION
+window.openComic = async (file) => {
+  window.showLoader("Reading CBZ...");
 
-	  const newOutput = document.createElement("div");
-	  newOutput.id = "output";
-	  newOutput.style.display = "grid";
-	  newOutput.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, 1fr))";
-	  newOutput.style.gap = "14px";
-	  newOutput.style.marginTop = "24px";
-	  document.querySelector("main").appendChild(newOutput);
+  // Destroy previous gallery
+  if (window.galleryInstance) {
+    window.galleryInstance.destroy(true);
+    window.galleryInstance = null;
+  }
 
-	  // Load CBZ
-	  const zip = await JSZip.loadAsync(file);
-	  const images = [];
+  // Revoke old blob URLs
+  window.currentUrls.forEach(url => URL.revokeObjectURL(url));
+  window.currentUrls = [];
 
-	  zip.forEach((path, entry) => {
-		if (/\.(jpg|jpeg|png|webp)$/i.test(path)) images.push(entry);
-	  });
+  // Reset output
+  const oldOutput = document.getElementById("output");
+  oldOutput.remove();
 
-	  images.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+  const newOutput = document.createElement("div");
+  newOutput.id = "output";
+  newOutput.style.display = "grid";
+  newOutput.style.gridTemplateColumns = "repeat(auto-fill, minmax(180px, 1fr))";
+  newOutput.style.gap = "14px";
+  newOutput.style.marginTop = "24px";
+  document.querySelector("main").appendChild(newOutput);
 
-	  const fragment = document.createDocumentFragment();
+  // Load CBZ
+  const zip = await JSZip.loadAsync(file);
+  const images = [];
 
-	  for (let i = 0; i < images.length; i++) {
-		const blob = await images[i].async("blob");
-		const url = URL.createObjectURL(blob);
-		window.currentUrls.push(url);
+  zip.forEach((path, entry) => {
+    if (/\.(jpg|jpeg|png|webp)$/i.test(path)) {
+      images.push(entry);
+    }
+  });
 
-		const wrapper = document.createElement("div");
-		const a = document.createElement("a");
-		a.href = url;
+  images.sort((a, b) =>
+    a.name.localeCompare(b.name, undefined, { numeric: true })
+  );
 
-		const img = document.createElement("img");
-		img.src = url;
-		img.alt = images[i].name;
-		a.appendChild(img);
+  const BATCH_SIZE = 5;
 
-		const name = document.createElement("div");
-		name.textContent = images[i].name;
-		name.style.fontSize = "12px";
-		name.style.opacity = "0.7";
-		name.style.wordBreak = "break-word";
-		name.style.padding = "6px 4px 0";
+  for (let i = 0; i < images.length; i += BATCH_SIZE) {
+    const batch = images.slice(i, i + BATCH_SIZE);
 
-		wrapper.appendChild(a);
-		// wrapper.appendChild(name);
-		fragment.appendChild(wrapper);
+    // Load batch in parallel
+    const blobs = await Promise.all(
+      batch.map(img => img.async("blob"))
+    );
 
-		document.getElementById("loaderText").textContent = `Loading ${i + 1}/${images.length}`;
-	  }
+    const fragment = document.createDocumentFragment();
 
-	  newOutput.appendChild(fragment);
+    blobs.forEach((blob, index) => {
+	  const entry = batch[index];
 
-	  // Initialize new gallery
-	  requestAnimationFrame(() => {
-		window.galleryInstance = lightGallery(newOutput, {
-		  selector: 'a',
-		  thumbnail: true,
-		  zoom: true,
-		  fullScreen: true,
-		  rotate: true,
-		  autoplay: false
-		});
-		window.hideLoader();
-	  });
-	};
+	  const url = URL.createObjectURL(blob);
+	  window.currentUrls.push(url);
 
-	// Update demo buttons to use global openComic
-	document.querySelectorAll(".demo-btn").forEach(btn => {
-	  btn.onclick = async () => {
-		window.showLoader("Downloading CBZ...");
-		const res = await fetch(btn.dataset.url);
-		const blob = await res.blob();
-		const file = new File([blob], "demo.cbz");
-		window.openComic(file);
-	  };
+	  const wrapper = document.createElement("div");
+
+	  const a = document.createElement("a");
+	  a.href = url;
+
+	  const img = document.createElement("img");
+	  img.src = url;
+	  img.loading = "lazy";
+
+	  // 🔥 filename label
+	  const name = document.createElement("div");
+	  name.textContent = entry.name;
+	  name.style.fontSize = "12px";
+	  name.style.opacity = "0.7";
+	  name.style.wordBreak = "break-word";
+	  name.style.padding = "6px 4px 0";
+
+	  a.appendChild(img);
+	  a.appendChild(name);
+
+	  wrapper.appendChild(a);
+	  fragment.appendChild(wrapper);
 	});
 
-	// DROPZONE
-	if (window.Dropzone) {
-	  Dropzone.autoDiscover = false;
-	  new Dropzone("#dropzone", {
-		url: "#",
-		autoProcessQueue: false,
-		maxFiles: 1,
-		init: function () {
-		  this.on("addedfile", file => window.openComic(file));
-		}
-	  });
-	}
+    // Progressive render
+    newOutput.appendChild(fragment);
+
+    document.getElementById("loaderText").textContent =
+      `Loading ${Math.min(i + BATCH_SIZE, images.length)}/${images.length}`;
+  }
+
+  // Initialize gallery
+  requestAnimationFrame(() => {
+    window.galleryInstance = lightGallery(newOutput, {
+      selector: 'a',
+      thumbnail: true,
+      zoom: true,
+      fullScreen: true,
+      rotate: true,
+      autoplay: false
+    });
+
+    window.hideLoader();
+
+    setTimeout(() => {
+      window.galleryInstance.openGallery(0);
+    }, 50);
+  });
+};
+
+// Sidebar demo buttons
+document.querySelectorAll(".demo-btn").forEach(btn => {
+  btn.onclick = async () => {
+    window.showLoader("Downloading CBZ...");
+    const res = await fetch(btn.dataset.url);
+    const blob = await res.blob();
+    const file = new File([blob], "demo.cbz");
+    window.openComic(file);
+  };
+});
+
+// Dropzone
+if (window.Dropzone) {
+  Dropzone.autoDiscover = false;
+
+  new Dropzone("#dropzone", {
+    url: "#",
+    autoProcessQueue: false,
+    maxFiles: 1,
+    init: function () {
+      this.on("addedfile", file => window.openComic(file));
+    }
+  });
+}
 </script>
 
 </body>
