@@ -54,6 +54,7 @@ const categories = [
       { name: "Splish Splash Snatch", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-SPLISH-SPLASH-SNATCH.cbz" },
       { name: "Stop In The Name Of Lust", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-STOP-IN-THE-NAME-OF-LUST.cbz" },
       { name: "Strictly Business", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-STRICTLY-BUSINESS.cbz" },
+      { name: "Strip Strap Rap Sexy", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-STRIP-STRAP-RAP-SEXY.cbz" }
       { name: "Sweet As Candy Kayden", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-SWEET-AS-CANDY-KAYDEN.cbz" },
       { name: "Sweet Pink Lips", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-SWEET-PINK-LIPS.cbz" },
       { name: "Tennis", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-TENNIS.cbz" },
@@ -61,6 +62,7 @@ const categories = [
       { name: "Time To Celebrate", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-TIME-TO-CELEBRATE.cbz" },
       { name: "Uncontrollably Sexy Kayden", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-UNCONTROLLABLY-SEXY-KAYDEN.cbz" },
       { name: "Vacation Vixen", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-VACATION-VIXEN.cbz" },
+      { name: "Warning This Babe Is Hot", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-WARNING-THIS-BABE-IS-HOT.cbz" }
       { name: "Window Light", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-WINDOW-LIGHT.cbz" },
       { name: "You'll Always Be My Baby", url: "https://feliciahard.github.io/Strippy/KYDN-KROSS/KAYDEN-KROSS-YOULL-ALWAYS-BE-MY-BABY.cbz" }
     ]
@@ -113,6 +115,7 @@ const categories = [
       { name: "My Joy", url: "https://feliciahard.github.io/Strippy/JM/MY_JOY.cbz" },
       { name: "Nirasu", url: "https://feliciahard.github.io/Strippy/JM/NIRASU.cbz" },
       { name: "Not Tonight", url: "https://feliciahard.github.io/Strippy/JM/NOT_TONIGHT.cbz" },
+      { name: "Nuzie", url: "https://feliciahard.github.io/Strippy/JM/NUZIE.cbz" },
       { name: "Ohwell", url: "https://feliciahard.github.io/Strippy/JM/OHWELL.cbz" },
       { name: "One Caress", url: "https://feliciahard.github.io/Strippy/JM/ONE_CARESS.cbz" },
       { name: "Pafarko", url: "https://feliciahard.github.io/Strippy/JM/PAFARKO.cbz" },
